@@ -30,8 +30,47 @@ namespace async_tests
 
         private static Task<long> FibonacciAsync(long n)
         {
-            return Task.Run(() => Fibonacci(n));
+            // Starting a new task for calculating the Fibonacci number.
+            // We use Task.Factory.StartNew instead of Task.Run because this method
+            // is potentially very CPU-intensive, especially for large values of 'n'.
+            // The TaskCreationOptions.LongRunning option hints that the task is long-running,
+            // and it may be executed on a dedicated thread instead of a thread pool thread.
+            // This can prevent overburdening the thread pool, especially for tasks 
+            // that are expected to run for an extended period.
+            return Task.Factory.StartNew(() => Fibonacci(n),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
         }
+
+        // private static Task<long> FibonacciAsync(long n)
+        // {
+        //     // Creating a TaskCompletionSource to represent the operation.
+        //     // This allows us to manually control the completion of the task.
+        //     var tcs = new TaskCompletionSource<long>();
+        //
+        //     // Creating and starting a new dedicated thread for the Fibonacci calculation.
+        //     // This ensures the calculation is done on a new thread, not on a thread pool thread.
+        //     var dedicatedThread = new Thread(() =>
+        //     {
+        //         try
+        //         {
+        //             // Calculating Fibonacci and setting the result.
+        //             var result = Fibonacci(n);
+        //             tcs.SetResult(result);
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             // If an exception occurs, it's propagated to the awaiting task.
+        //             tcs.SetException(ex);
+        //         }
+        //     });
+        //
+        //     dedicatedThread.Start();
+        //
+        //     // Returning the task which represents the asynchronous operation.
+        //     return tcs.Task;
+        // }
 
         private static string GetString(string value)
         {
@@ -44,17 +83,43 @@ namespace async_tests
             // This is typical in scenarios where the task is waiting for an external resource
             // (like a database query or a web service call) without using the CPU intensively.
             await Task.Delay(waitTime);
-           
+
             Console.WriteLine(value);
-           
+
             return GetString(value);
         }
+        
+        [Test]
+        public void FibonacciSync20Test()
+        {
+            Assert.That(6765, Is.EqualTo(Fibonacci(20)));
+        }
+        
+        [Test]
+        public void FibonacciSyncRangeTest()
+        {
+            long total = 0;
 
+            for (var i = 10; i < 20; i++)
+            {
+                total += Fibonacci(i); //Note this could lockup the current thread (UI)
+            }
+
+            Assert.That(total, Is.EqualTo(10857));
+        }
 
         [Test]
         public async Task Fibonacci30Test()
         {
-            Assert.That(await Task.Run(() => Fibonacci(30)), Is.EqualTo(832040));
+            // Using Task.Factory.StartNew with TaskCreationOptions.LongRunning
+            // to run the Fibonacci calculation on a potentially separate thread.
+            // This is more suitable for long-running, CPU-intensive tasks.
+            var task = Task.Factory.StartNew(() => Fibonacci(30),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+
+            Assert.That(await task, Is.EqualTo(832040));
         }
 
         [Test]
@@ -62,19 +127,29 @@ namespace async_tests
         {
             var captured = 5;
 
+            // Synchronously doubling the captured value.
             void MultiplyByTwo()
             {
                 captured *= 2;
             }
 
-            async Task MultiplyByTwoAsync() //note: not returning anything
+            // Asynchronously doubling the captured value using Task.Run.
+            // While this is suitable for lightweight operations, frequent use
+            // of Task.Run for trivial tasks in a high-load environment like an ASP.NET server
+            // can lead to inefficient use of the thread pool and potential performance issues.
+            async Task MultiplyByTwoAsync()
             {
                 await Task.Run(() => captured *= 2);
             }
 
-            Task MultiplyByTwo2Async() //note: have to return task
+            // Returning a completed task with the updated value.
+            // Task.FromResult is more efficient here than Task.Run,
+            // as it avoids the overhead of scheduling a new task
+            // for a trivial operation.
+            Task MultiplyByTwo2Async()
             {
-                return Task.Run(() => captured *= 2);
+               // captured *= 2;
+                return Task.FromResult( captured *= 2); // The result is not used.
             }
 
             MultiplyByTwo();
@@ -106,25 +181,6 @@ namespace async_tests
             }
 
             Assert.That(total, Is.EqualTo(10857));
-        }
-
-        [Test]
-        public void FibonacciSyncRangeTest()
-        {
-            long total = 0;
-
-            for (var i = 10; i < 20; i++)
-            {
-                total += Fibonacci(i); //Note this could lockup the current thread (UI)
-            }
-
-            Assert.That(total, Is.EqualTo(10857));
-        }
-
-        [Test]
-        public void Fibonacci20Test()
-        {
-            Assert.That(6765, Is.EqualTo(Fibonacci(20)));
         }
 
         [Test]
@@ -166,7 +222,10 @@ namespace async_tests
 
             var res = await Task.WhenAll(task2, task1); //ordered by position
 
-            CollectionAssert.AreEqual(new[] {"WORLD", "HELLO"}, res);
+            CollectionAssert.AreEqual(new[]
+            {
+                "WORLD", "HELLO"
+            }, res);
 
             Assert.That($"{task1.Result} {task2.Result}", Is.EqualTo("HELLO WORLD"));
         }
@@ -208,7 +267,10 @@ namespace async_tests
             }
             catch (TaskCanceledException)
             {
-                CollectionAssert.AreEqual(new[] {0, 1, 2, 3, 4}, numbers);
+                CollectionAssert.AreEqual(new[]
+                {
+                    0, 1, 2, 3, 4
+                }, numbers);
             }
         }
 
