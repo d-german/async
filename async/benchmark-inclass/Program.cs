@@ -1,11 +1,8 @@
 ﻿using System.Collections.Immutable;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
 
-[MemoryDiagnoser]
 public class DictionaryBenchmark
 {
-    [Params(1000, 10000, 100000)] // Different sizes for benchmarking
+   
     public int NumberOfElements { get; set; }
 
     private List<int> _keysToLookup;
@@ -16,8 +13,8 @@ public class DictionaryBenchmark
     private SortedDictionary<int, string> _sortedDictionary;
     private ImmutableDictionary<int, string> _immutableDictionary;
 
-    [GlobalSetup]
-    public void Setup()
+   
+    public  DictionaryBenchmark()
     {
         _random = new Random();
         _keysToLookup = new List<int>();
@@ -43,7 +40,7 @@ public class DictionaryBenchmark
         _immutableDictionary = immutableBuilder.ToImmutable();
     }
 
-    [Benchmark]
+ 
     public void AddToDictionary()
     {
         var tempDict = new Dictionary<int, string>();
@@ -53,7 +50,7 @@ public class DictionaryBenchmark
         }
     }
 
-    [Benchmark]
+  
     public void AddToSortedDictionary()
     {
         var tempDict = new SortedDictionary<int, string>();
@@ -63,7 +60,7 @@ public class DictionaryBenchmark
         }
     }
 
-    [Benchmark]
+   
     public void AddToImmutableDictionary()
     {
         var builder = ImmutableDictionary.CreateBuilder<int, string>();
@@ -74,7 +71,7 @@ public class DictionaryBenchmark
         var immutableDict = builder.ToImmutable();
     }
 
-    [Benchmark]
+   
     public string LookupInDictionary()
     {
         string result = null;
@@ -85,7 +82,7 @@ public class DictionaryBenchmark
         return result;
     }
 
-    [Benchmark]
+    
     public string LookupInSortedDictionary()
     {
         string result = null;
@@ -96,7 +93,7 @@ public class DictionaryBenchmark
         return result;
     }
 
-    [Benchmark]
+    
     public string LookupInImmutableDictionary()
     {
         string result = null;
@@ -114,7 +111,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        BenchmarkRunner.Run<DictionaryBenchmark>();
+        //BenchmarkRunner.Run<DictionaryBenchmark>();
     }
 }
 /*
