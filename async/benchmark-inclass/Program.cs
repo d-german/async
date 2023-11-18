@@ -5,7 +5,7 @@ public class DictionaryBenchmark
    
     public int NumberOfElements { get; set; }
 
-    private List<int> _keysToLookup;
+    private readonly List<int> _keysToLookup;
     private Random _random;
 
     // Dictionaries for benchmarking
