@@ -25,15 +25,6 @@ public class JsonFileTest
         Assert.That(numbers.Average(), Is.EqualTo(3));
     }
 
-    [Test]
-    public async Task LoadJsonFileAndCalculateAverageAsynchronously()
-    {
-        var numbers = Parse(await ReadAllTextAsync(JsonFilePath))
-            .RootElement.GetProperty(NumbersArrayKey)
-            .EnumerateArray()
-            .Select(element => element.GetInt32())
-            .ToArray();
+    // TODO: Write async version of the test above using async/await and ReadAllTextAsync
 
-        Assert.That(numbers.Average(), Is.EqualTo(3));
-    }
 }
