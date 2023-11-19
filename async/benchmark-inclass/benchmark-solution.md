@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-
+[MemoryDiagnoser]
 public class DictionaryBenchmark
 {
     [Params(1000, 10000, 100000)]
